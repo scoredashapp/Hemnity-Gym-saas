@@ -53,6 +53,7 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
     <!doctype html>
     <html lang="en">
     <head>
+        <script>(function(){try{var t=localStorage.getItem("hemnity_theme");if(!t){t=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-bs-theme",t);}catch(e){}})();</script>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title><?= e($platformCfg['seo_title'] ?? 'Hemnity Gym Management Software') ?></title>
@@ -64,6 +65,21 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
         <link href="assets/css/style.css" rel="stylesheet">
+        <style>
+            [data-bs-theme="dark"] { --gym-bg:#0b0d12; --gym-surface:#151922; --gym-border:#262c38; --gym-text:#e5e7eb; --gym-muted:#9ca3af; --gym-orange-soft:#2a1a10; }
+            [data-bs-theme="dark"] body.gym-body { background-color:#0b0d12; color:#e5e7eb; }
+            [data-bs-theme="dark"] .bg-white { background-color:#12151c !important; }
+            [data-bs-theme="dark"] .navbar { background-color:#0f1218 !important; border-color:#262c38 !important; }
+            [data-bs-theme="dark"] .navbar .nav-link, [data-bs-theme="dark"] .navbar-brand { color:#e5e7eb; }
+            [data-bs-theme="dark"] .gym-card { background:#171b25; border-color:#262c38; color:#e5e7eb; }
+            [data-bs-theme="dark"] .text-muted { color:#9ca3af !important; }
+            [data-bs-theme="dark"] .border, [data-bs-theme="dark"] .border-bottom, [data-bs-theme="dark"] .border-top { border-color:#262c38 !important; }
+            [data-bs-theme="dark"] .btn-gym-dark { background:#e5e7eb; color:#0b0d12; border-color:#e5e7eb; }
+            [data-bs-theme="dark"] .bg-warning-subtle { background:#2b2410 !important; color:#fcd34d; }
+            [data-bs-theme="dark"] .form-control { background:#0f1218; border-color:#2a3140; color:#e5e7eb; }
+            .theme-toggle { border:1px solid var(--gym-border,#e5e7eb); background:transparent; color:inherit; border-radius:999px; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; }
+            .theme-toggle .moon { display:none; } [data-bs-theme="dark"] .theme-toggle .sun { display:none; } [data-bs-theme="dark"] .theme-toggle .moon { display:inline; }
+        </style>
     </head>
     <body class="gym-body">
     <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
@@ -82,7 +98,8 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
                     <li class="nav-item"><a class="nav-link" href="#faqs">FAQs</a></li>
                     <li class="nav-item"><a class="nav-link" href="#contact">Support</a></li>
                 </ul>
-                <div class="d-flex flex-wrap gap-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch day / night mode" title="Day / Night"><i class="bi bi-sun-fill sun"></i><i class="bi bi-moon-stars-fill moon"></i></button>
                     <a href="owner_register.php" class="btn btn-sm btn-gym-primary">Start Free Trial</a>
                 </div>
             </div>
@@ -219,6 +236,13 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/app.js"></script>
+    <script>
+    document.getElementById('themeToggle').addEventListener('click', function () {
+        var el = document.documentElement, next = el.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+        el.setAttribute('data-bs-theme', next);
+        try { localStorage.setItem('hemnity_theme', next); } catch (e) {}
+    });
+    </script>
     </body>
     </html>
     <?php
