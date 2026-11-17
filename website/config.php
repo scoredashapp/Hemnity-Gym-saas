@@ -812,7 +812,7 @@ function bearer_token_user(PDO $pdo): ?array
  */
 function hemnity_ensure_schema(PDO $pdo): void
 {
-    $marker = __DIR__ . '/uploads/.schema_v22';
+    $marker = __DIR__ . '/uploads/.schema_v23';
     if (is_file($marker)) {
         return;
     }
@@ -822,7 +822,7 @@ function hemnity_ensure_schema(PDO $pdo): void
             $q->execute([':t' => $table, ':c' => $col]);
             return (int)$q->fetchColumn() > 0;
         };
-        foreach (['site_logo_path', 'favicon_path', 'owner_apk_path', 'member_apk_path', 'owner_apk_url', 'member_apk_url', 'owner_apk_version', 'member_apk_version'] as $col) {
+        foreach (['site_logo_path', 'favicon_path', 'owner_apk_path', 'member_apk_path', 'owner_apk_url', 'member_apk_url', 'owner_apk_version', 'member_apk_version', 'youtube_url', 'youtube_title'] as $col) {
             if (!$colExists('platform_settings', $col)) {
                 $pdo->exec('ALTER TABLE platform_settings ADD COLUMN `' . $col . '` VARCHAR(255) NULL');
             }
@@ -862,6 +862,31 @@ function hemnity_ensure_schema(PDO $pdo): void
                 `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                 KEY `idx_wa_gym_date` (`gym_id`, `log_date`),
                 KEY `idx_wa_member_kind` (`gym_id`, `member_id`, `kind`, `log_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS `landing_reviews` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `customer_name` VARCHAR(120) NOT NULL,
+                `customer_role` VARCHAR(150) NULL,
+                `rating` TINYINT NOT NULL DEFAULT 5,
+                `review_text` TEXT NOT NULL,
+                `photo_path` VARCHAR(255) NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+        );
+        $pdo->exec(
+            "CREATE TABLE IF NOT EXISTS `landing_partners` (
+                `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                `name` VARCHAR(150) NOT NULL,
+                `city` VARCHAR(100) NULL,
+                `website_url` VARCHAR(255) NULL,
+                `logo_path` VARCHAR(255) NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
         $pdo->exec(
@@ -1161,4 +1186,18 @@ function app_download_info(array $cfg, string $app): ?array
         return ['url' => app_href('app_download') . '?app=' . $app, 'version' => $ver, 'external' => false, 'size' => filesize(__DIR__ . '/' . $rel)];
     }
     return null;
+}
+
+
+/** Extracts the 11-char video id from any common YouTube URL (watch, youtu.be, shorts, embed, live). */
+function youtube_video_id(?string $url): ?string
+{
+    $url = trim((string)$url);
+    if ($url === '') {
+        return null;
+    }
+    if (preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/))([A-Za-z0-9_-]{11})~i', $url, $m)) {
+        return $m[1];
+    }
+    return preg_match('/^[A-Za-z0-9_-]{11}$/', $url) ? $url : null;
 }

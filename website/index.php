@@ -48,6 +48,9 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
     }
 
     $saasPlans = $pdo->query('SELECT * FROM saas_plans WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
+    $lpReviews  = $pdo->query('SELECT * FROM landing_reviews WHERE is_active = 1 ORDER BY sort_order ASC, id DESC LIMIT 12')->fetchAll();
+    $lpPartners = $pdo->query('SELECT * FROM landing_partners WHERE is_active = 1 ORDER BY sort_order ASC, id DESC LIMIT 60')->fetchAll();
+    $lpYtId     = youtube_video_id($platformCfg['youtube_url'] ?? null);
     $faqs      = $pdo->query('SELECT * FROM platform_faqs WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')->fetchAll();
     ?>
     <!doctype html>
@@ -142,6 +145,67 @@ if ($showLanding || !$sessionUser || $sessionUser['role'] !== 'gym_owner') {
             </div>
         </div>
     </section>
+
+    <?php if ($lpYtId): ?>
+    <section id="video" class="py-5">
+        <div class="container">
+            <h2 class="h3 fw-bold text-center mb-4"><?= e($platformCfg['youtube_title'] ?: 'See it in action') ?></h2>
+            <div class="mx-auto" style="max-width: 860px;">
+                <div class="ratio ratio-16x9 rounded-4 overflow-hidden shadow">
+                    <iframe src="https://www.youtube-nocookie.com/embed/<?= e($lpYtId) ?>?rel=0" title="<?= e($platformCfg['youtube_title'] ?: 'Product video') ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if (!empty($lpPartners)): ?>
+    <section id="partners" class="py-5 bg-white border-top border-bottom">
+        <div class="container">
+            <div class="text-center mb-4"><h2 class="h3 fw-bold mb-1">Trusted by Gyms We Work With</h2><p class="text-muted small mb-0">Fitness clubs already running on our platform.</p></div>
+            <div class="row g-3 justify-content-center">
+                <?php foreach ($lpPartners as $pt): ?>
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <?php $tag = !empty($pt['website_url']) ? 'a' : 'div'; ?>
+                        <<?= $tag ?> <?= $tag === 'a' ? 'href="' . e($pt['website_url']) . '" target="_blank" rel="noopener noreferrer nofollow"' : '' ?> class="gym-card p-3 h-100 d-flex flex-column align-items-center justify-content-center text-center text-decoration-none" style="color:inherit;min-height:130px">
+                            <?php if (!empty($pt['logo_path']) && is_file(__DIR__ . '/' . $pt['logo_path'])): ?>
+                                <img src="<?= e($pt['logo_path']) ?>" alt="<?= e($pt['name']) ?>" loading="lazy" style="max-width:120px;max-height:56px;object-fit:contain;margin-bottom:8px">
+                            <?php else: ?>
+                                <span class="gym-brand-mark mb-2"><?= e(strtoupper(mb_substr((string)$pt['name'], 0, 1))) ?></span>
+                            <?php endif; ?>
+                            <div class="fw-semibold small"><?= e($pt['name']) ?></div>
+                            <?php if (!empty($pt['city'])): ?><div class="small text-muted"><?= e($pt['city']) ?></div><?php endif; ?>
+                        </<?= $tag ?>>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
+    <?php if (!empty($lpReviews)): ?>
+    <section id="reviews" class="py-5">
+        <div class="container">
+            <div class="text-center mb-4"><h2 class="h3 fw-bold mb-1">What Our Customers Say</h2><p class="text-muted small mb-0">Real feedback from gym owners using Hemnity.</p></div>
+            <div class="row g-4">
+                <?php foreach ($lpReviews as $rv): ?>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="gym-card p-4 h-100 d-flex flex-column">
+                            <div class="mb-2" style="color:#f59e0b;letter-spacing:2px" aria-label="<?= (int)$rv['rating'] ?> out of 5 stars"><?= str_repeat('★', (int)$rv['rating']) . str_repeat('☆', 5 - (int)$rv['rating']) ?></div>
+                            <p class="mb-3 flex-grow-1">&ldquo;<?= e($rv['review_text']) ?>&rdquo;</p>
+                            <div class="d-flex align-items-center gap-2">
+                                <?php if (!empty($rv['photo_path']) && is_file(__DIR__ . '/' . $rv['photo_path'])): ?>
+                                    <img src="<?= e($rv['photo_path']) ?>" alt="" loading="lazy" style="width:44px;height:44px;border-radius:50%;object-fit:cover">
+                                <?php else: ?><span class="gym-avatar"><?= e(strtoupper(mb_substr((string)$rv['customer_name'], 0, 1))) ?></span><?php endif; ?>
+                                <div><div class="fw-semibold small"><?= e($rv['customer_name']) ?></div><?php if (!empty($rv['customer_role'])): ?><div class="small text-muted"><?= e($rv['customer_role']) ?></div><?php endif; ?></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <section id="pricing" class="py-5">
         <div class="container">

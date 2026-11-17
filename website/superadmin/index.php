@@ -8,7 +8,7 @@ $superAdmin  = require_super_admin();
 $pdo         = db();
 $platformCfg = get_platform_settings($pdo);
 
-$allowedTabs = ['overview', 'gyms', 'plans', 'subscriptions', 'branding', 'apps', 'cms', 'tickets', 'audit'];
+$allowedTabs = ['overview', 'gyms', 'plans', 'subscriptions', 'branding', 'apps', 'showcase', 'cms', 'tickets', 'audit'];
 $tab = clean_str($_GET['tab'] ?? 'overview', 30);
 if (!in_array($tab, $allowedTabs, true)) {
     $tab = 'overview';
@@ -214,6 +214,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             set_flash('success', 'Recorded SaaS invoice ' . $invoice . ' and extended gym subscription by ' . $extend . ' days.');
         }
         redirect('index.php?tab=subscriptions');
+    }
+
+    if ($action === 'save_youtube') {
+        $url = clean_str((string)($_POST['youtube_url'] ?? ''), 255);
+        if ($url !== '' && youtube_video_id($url) === null) {
+            set_flash('danger', 'That does not look like a valid YouTube link.');
+        } else {
+            $pdo->prepare('UPDATE platform_settings SET youtube_url = :u, youtube_title = :t WHERE id = 1')->execute([':u' => $url ?: null, ':t' => clean_str((string)($_POST['youtube_title'] ?? ''), 150) ?: null]);
+            set_flash('success', $url === '' ? 'Homepage video removed.' : 'Homepage YouTube video saved.');
+        }
+        redirect('index.php?tab=showcase');
+    }
+    if ($action === 'add_review') {
+        $name = clean_str((string)($_POST['customer_name'] ?? ''), 120);
+        $text = clean_str((string)($_POST['review_text'] ?? ''), 1500, true);
+        if ($name === '' || $text === '') {
+            set_flash('danger', 'Customer name and review text are required.');
+            redirect('index.php?tab=showcase');
+        }
+        $photo = null;
+        if (!empty($_FILES['photo']) && (int)($_FILES['photo']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+            $up = handle_image_upload($_FILES['photo'], 'showcase');
+            if (!$up['ok']) { set_flash('danger', (string)$up['error']); redirect('index.php?tab=showcase'); }
+            $photo = $up['path'];
+        }
+        $pdo->prepare('INSERT INTO landing_reviews (customer_name, customer_role, rating, review_text, photo_path, sort_order) VALUES (:n, :r, :rt, :t, :p, :s)')
+            ->execute([':n' => $name, ':r' => clean_str((string)($_POST['customer_role'] ?? ''), 150) ?: null, ':rt' => max(1, min(5, (int)($_POST['rating'] ?? 5))), ':t' => $text, ':p' => $photo, ':s' => (int)($_POST['sort_order'] ?? 0)]);
+        set_flash('success', 'Customer review added to the homepage.');
+        redirect('index.php?tab=showcase');
+    }
+    if ($action === 'add_partner') {
+        $name = clean_str((string)($_POST['partner_name'] ?? ''), 150);
+        if ($name === '') { set_flash('danger', 'Partner / gym name is required.'); redirect('index.php?tab=showcase'); }
+        $site = clean_str((string)($_POST['website_url'] ?? ''), 255);
+        if ($site !== '' && !preg_match('#^https?://#i', $site)) { $site = 'https://' . $site; }
+        $logo = null;
+        if (!empty($_FILES['logo']) && (int)($_FILES['logo']['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+            $up = handle_image_upload($_FILES['logo'], 'showcase');
+            if (!$up['ok']) { set_flash('danger', (string)$up['error']); redirect('index.php?tab=showcase'); }
+            $logo = $up['path'];
+        }
+        $pdo->prepare('INSERT INTO landing_partners (name, city, website_url, logo_path, sort_order) VALUES (:n, :c, :w, :l, :s)')
+            ->execute([':n' => $name, ':c' => clean_str((string)($_POST['city'] ?? ''), 100) ?: null, ':w' => $site ?: null, ':l' => $logo, ':s' => (int)($_POST['sort_order'] ?? 0)]);
+        set_flash('success', 'Trusted partner added to the homepage.');
+        redirect('index.php?tab=showcase');
+    }
+    if (in_array($action, ['delete_review', 'toggle_review', 'delete_partner', 'toggle_partner'], true)) {
+        $id = (int)($_POST['item_id'] ?? 0);
+        $tbl = str_contains($action, 'review') ? 'landing_reviews' : 'landing_partners';
+        $imgCol = $tbl === 'landing_reviews' ? 'photo_path' : 'logo_path';
+        if ($id > 0) {
+            if (str_starts_with($action, 'delete')) {
+                $q = $pdo->prepare("SELECT {$imgCol} FROM {$tbl} WHERE id = :id"); $q->execute([':id' => $id]);
+                $f = (string)$q->fetchColumn();
+                if ($f !== '' && str_starts_with($f, 'uploads/showcase/')) { @unlink(dirname(__DIR__) . '/' . $f); }
+                $pdo->prepare("DELETE FROM {$tbl} WHERE id = :id")->execute([':id' => $id]);
+                set_flash('success', 'Removed.');
+            } else {
+                $pdo->prepare("UPDATE {$tbl} SET is_active = 1 - is_active WHERE id = :id")->execute([':id' => $id]);
+                set_flash('success', 'Visibility updated.');
+            }
+        }
+        redirect('index.php?tab=showcase');
     }
 
     if ($action === 'save_apps') {
@@ -454,6 +517,7 @@ $flashes = pull_flashes();
                 'subscriptions' => ['Subscriptions & Invoices', 'bi-receipt'],
                 'branding'      => ['Site Logo & Favicon', 'bi-image'],
                 'apps'          => ['Mobile Apps (APK)', 'bi-android2'],
+                'showcase'      => ['Reviews, Video & Partners', 'bi-stars'],
                 'cms'           => ['Landing CMS & FAQs', 'bi-layout-text-window'],
                 'tickets'       => ['Support Tickets (' . $stats['open_tickets'] . ')', 'bi-life-preserver'],
                 'audit'         => ['Audit Logs', 'bi-shield-check'],
@@ -832,6 +896,82 @@ $flashes = pull_flashes();
                 <div class="form-text mt-2">If the upload fails for large files, ask your host to raise <code>upload_max_filesize</code>/<code>post_max_size</code>, or use the link field.</div>
             </form>
         </div></div>
+
+    <?php elseif ($tab === 'showcase'): ?>
+        <?php
+        $scCfg   = $pdo->query('SELECT youtube_url, youtube_title FROM platform_settings WHERE id = 1')->fetch() ?: [];
+        $reviews = $pdo->query('SELECT * FROM landing_reviews ORDER BY sort_order ASC, id DESC')->fetchAll();
+        $partners = $pdo->query('SELECT * FROM landing_partners ORDER BY sort_order ASC, id DESC')->fetchAll();
+        $ytId = youtube_video_id($scCfg['youtube_url'] ?? null);
+        $rowForm = static function (string $action, int $id, string $csrf, string $label, string $cls): string {
+            return '<form method="post" action="index.php?tab=showcase" class="d-inline m-0">' . $csrf . '<input type="hidden" name="action" value="' . $action . '"><input type="hidden" name="item_id" value="' . $id . '"><button class="btn btn-sm ' . $cls . '">' . $label . '</button></form>';
+        };
+        ?>
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <form method="post" action="index.php?tab=showcase" class="gym-card p-4 mb-4">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="save_youtube">
+                    <h2 class="h6 fw-bold mb-1"><i class="bi bi-youtube text-danger me-1"></i>Homepage YouTube Video</h2>
+                    <p class="small text-muted">Paste any YouTube link (watch, youtu.be, shorts). It plays on the landing page. Leave empty to hide the video section.</p>
+                    <div class="mb-2"><label class="form-label small">YouTube link</label><input type="text" name="youtube_url" class="form-control form-control-sm" value="<?= e($scCfg['youtube_url'] ?? '') ?>" placeholder="https://www.youtube.com/watch?v=..."></div>
+                    <div class="mb-3"><label class="form-label small">Section heading (optional)</label><input type="text" name="youtube_title" class="form-control form-control-sm" value="<?= e($scCfg['youtube_title'] ?? '') ?>" placeholder="See Hemnity Gym in action"></div>
+                    <?php if ($ytId): ?><div class="ratio ratio-16x9 mb-3 rounded overflow-hidden"><iframe src="https://www.youtube-nocookie.com/embed/<?= e($ytId) ?>" title="Preview" allowfullscreen loading="lazy"></iframe></div><?php endif; ?>
+                    <button class="btn btn-gym-primary btn-sm">Save Video</button>
+                </form>
+
+                <form method="post" action="index.php?tab=showcase" enctype="multipart/form-data" class="gym-card p-4">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="add_review">
+                    <h2 class="h6 fw-bold mb-3"><i class="bi bi-chat-quote me-1"></i>Add Customer Review</h2>
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label small">Customer name *</label><input type="text" name="customer_name" class="form-control form-control-sm" required></div>
+                        <div class="col-md-6"><label class="form-label small">Gym / designation</label><input type="text" name="customer_role" class="form-control form-control-sm" placeholder="Owner, FitZone Gym, Pune"></div>
+                        <div class="col-12"><label class="form-label small">Review *</label><textarea name="review_text" rows="3" class="form-control form-control-sm" required></textarea></div>
+                        <div class="col-4"><label class="form-label small">Rating</label><select name="rating" class="form-select form-select-sm"><?php for ($i = 5; $i >= 1; $i--): ?><option value="<?= $i ?>"><?= $i ?> ★</option><?php endfor; ?></select></div>
+                        <div class="col-4"><label class="form-label small">Order</label><input type="number" name="sort_order" value="0" class="form-control form-control-sm"></div>
+                        <div class="col-4"><label class="form-label small">Photo</label><input type="file" name="photo" accept=".jpg,.jpeg,.png,.webp" class="form-control form-control-sm"></div>
+                    </div>
+                    <button class="btn btn-gym-primary btn-sm mt-3">Add Review</button>
+                </form>
+            </div>
+
+            <div class="col-lg-6">
+                <form method="post" action="index.php?tab=showcase" enctype="multipart/form-data" class="gym-card p-4 mb-4">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="add_partner">
+                    <h2 class="h6 fw-bold mb-3"><i class="bi bi-patch-check me-1"></i>Add Trusted Partner / Gym</h2>
+                    <div class="row g-2">
+                        <div class="col-md-8"><label class="form-label small">Gym / partner name *</label><input type="text" name="partner_name" class="form-control form-control-sm" required></div>
+                        <div class="col-md-4"><label class="form-label small">City</label><input type="text" name="city" class="form-control form-control-sm"></div>
+                        <div class="col-md-6"><label class="form-label small">Website (optional)</label><input type="text" name="website_url" class="form-control form-control-sm" placeholder="https://"></div>
+                        <div class="col-md-3"><label class="form-label small">Order</label><input type="number" name="sort_order" value="0" class="form-control form-control-sm"></div>
+                        <div class="col-md-3"><label class="form-label small">Logo</label><input type="file" name="logo" accept=".jpg,.jpeg,.png,.webp" class="form-control form-control-sm"></div>
+                    </div>
+                    <button class="btn btn-gym-primary btn-sm mt-3">Add Partner</button>
+                </form>
+
+                <div class="gym-card p-4 mb-4">
+                    <h2 class="h6 fw-bold mb-3">Reviews (<?= count($reviews) ?>)</h2>
+                    <?php if (!$reviews): ?><div class="small text-muted">No reviews yet.</div><?php endif; ?>
+                    <?php foreach ($reviews as $r): ?>
+                        <div class="d-flex gap-2 align-items-start border-bottom py-2 <?= $r['is_active'] ? '' : 'opacity-50' ?>">
+                            <div class="flex-grow-1 small"><strong><?= e($r['customer_name']) ?></strong> <span class="text-warning"><?= str_repeat('★', (int)$r['rating']) ?></span><div class="text-muted"><?= e(mb_substr((string)$r['review_text'], 0, 110)) ?></div></div>
+                            <div class="text-nowrap"><?= $rowForm('toggle_review', (int)$r['id'], csrf_field(), $r['is_active'] ? 'Hide' : 'Show', 'btn-outline-secondary') ?> <?= $rowForm('delete_review', (int)$r['id'], csrf_field(), 'Delete', 'btn-outline-danger') ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="gym-card p-4">
+                    <h2 class="h6 fw-bold mb-3">Trusted Partners (<?= count($partners) ?>)</h2>
+                    <?php if (!$partners): ?><div class="small text-muted">No partners yet.</div><?php endif; ?>
+                    <?php foreach ($partners as $pt): ?>
+                        <div class="d-flex gap-2 align-items-center border-bottom py-2 <?= $pt['is_active'] ? '' : 'opacity-50' ?>">
+                            <?php if (!empty($pt['logo_path'])): ?><img src="../<?= e($pt['logo_path']) ?>" alt="" style="width:40px;height:40px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #e5e7eb"><?php endif; ?>
+                            <div class="flex-grow-1 small"><strong><?= e($pt['name']) ?></strong><div class="text-muted"><?= e($pt['city'] ?? '') ?></div></div>
+                            <div class="text-nowrap"><?= $rowForm('toggle_partner', (int)$pt['id'], csrf_field(), $pt['is_active'] ? 'Hide' : 'Show', 'btn-outline-secondary') ?> <?= $rowForm('delete_partner', (int)$pt['id'], csrf_field(), 'Delete', 'btn-outline-danger') ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
 
     <?php elseif ($tab === 'cms'): ?>
         <div class="row g-4">
