@@ -812,7 +812,7 @@ function bearer_token_user(PDO $pdo): ?array
  */
 function hemnity_ensure_schema(PDO $pdo): void
 {
-    $marker = __DIR__ . '/uploads/.schema_v21';
+    $marker = __DIR__ . '/uploads/.schema_v22';
     if (is_file($marker)) {
         return;
     }
@@ -822,7 +822,7 @@ function hemnity_ensure_schema(PDO $pdo): void
             $q->execute([':t' => $table, ':c' => $col]);
             return (int)$q->fetchColumn() > 0;
         };
-        foreach (['site_logo_path', 'favicon_path'] as $col) {
+        foreach (['site_logo_path', 'favicon_path', 'owner_apk_path', 'member_apk_path', 'owner_apk_url', 'member_apk_url', 'owner_apk_version', 'member_apk_version'] as $col) {
             if (!$colExists('platform_settings', $col)) {
                 $pdo->exec('ALTER TABLE platform_settings ADD COLUMN `' . $col . '` VARCHAR(255) NULL');
             }
@@ -1144,4 +1144,21 @@ function whatsapp_run_daily(PDO $pdo, ?int $onlyGymId = null): array
 function hemnity_cron_token(): string
 {
     return substr(hash_hmac('sha256', 'whatsapp-cron', hemnity_encryption_key()), 0, 32);
+}
+
+
+/** Returns ['url'=>..., 'version'=>...] for the owner|member Android app, or null when the admin has not set one. */
+function app_download_info(array $cfg, string $app): ?array
+{
+    $app = $app === 'member' ? 'member' : 'owner';
+    $ext = trim((string)($cfg[$app . '_apk_url'] ?? ''));
+    $rel = (string)($cfg[$app . '_apk_path'] ?? '');
+    $ver = trim((string)($cfg[$app . '_apk_version'] ?? ''));
+    if ($ext !== '' && preg_match('#^https?://#i', $ext)) {
+        return ['url' => $ext, 'version' => $ver, 'external' => true];
+    }
+    if ($rel !== '' && str_starts_with($rel, 'uploads/apps/') && is_file(__DIR__ . '/' . $rel)) {
+        return ['url' => app_href('app_download') . '?app=' . $app, 'version' => $ver, 'external' => false, 'size' => filesize(__DIR__ . '/' . $rel)];
+    }
+    return null;
 }

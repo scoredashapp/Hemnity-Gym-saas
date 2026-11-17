@@ -238,7 +238,7 @@ fun OwnerAttendanceScreen(
                                 .background(Color.Black)
                         ) {
                             CameraQrPreview(
-                                isPaused = uiState.scannerPaused || uiState.isCheckingIn,
+                                isPaused = uiState.isCheckingIn,
                                 torchEnabled = torchEnabled,
                                 onQrCodeScanned = onQrDetected,
                                 onCameraUnavailable = { reason -> cameraUnavailableReason = reason },
@@ -246,7 +246,7 @@ fun OwnerAttendanceScreen(
                             )
 
                             ScannerReticleOverlay(
-                                isActive = !uiState.scannerPaused && !uiState.isCheckingIn,
+                                isActive = !uiState.isCheckingIn,
                                 modifier = Modifier.fillMaxSize()
                             )
 
@@ -290,6 +290,10 @@ fun OwnerAttendanceScreen(
                 }
 
                 val checkInResult = uiState.checkInResult
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+                LaunchedEffect(checkInResult) {
+                    if (checkInResult != null) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                }
                 if (checkInResult != null) {
                     CheckInResultCard(result = checkInResult, onScanAgain = onResumeScanner)
                 }
@@ -486,16 +490,12 @@ private fun CheckInResultCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
-        Button(
-            onClick = onScanAgain,
-            modifier = Modifier.fillMaxWidth().height(48.dp).testTag("scan_again_button"),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ) {
-            Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Scan Again")
-        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Scanner is live — hold the next member's QR in front of the camera.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

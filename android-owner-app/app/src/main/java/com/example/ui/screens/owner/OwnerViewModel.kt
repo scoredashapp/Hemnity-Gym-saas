@@ -496,9 +496,9 @@ class OwnerViewModel(
     fun onQrCodeDetected(rawPayload: String) {
         val clean = rawPayload.trim()
         val state = _uiState.value
-        if (state.isCheckingIn || state.scannerPaused || clean.isBlank()) return
+        if (state.isCheckingIn || clean.isBlank()) return
         val now = System.currentTimeMillis()
-        if (clean == lastQrRawPayload && (now - lastQrProcessedAtMs) < 2500L) return
+        if (clean == lastQrRawPayload && (now - lastQrProcessedAtMs) < 5000L) return
         lastQrRawPayload = clean
         lastQrProcessedAtMs = now
         submitCheckIn(clean, isManualCode = false)
@@ -514,7 +514,7 @@ class OwnerViewModel(
             _uiState.update {
                 it.copy(
                     isCheckingIn = true,
-                    scannerPaused = true,
+                    scannerPaused = false,
                     lastScannedPayload = payload,
                     checkInResult = null,
                     checkInNetworkError = null

@@ -159,6 +159,7 @@ if ($activeProfile) {
                     </select>
                 </form>
             <?php endif; ?>
+            <?php if ($memberApp = app_download_info($platformCfg ?? get_platform_settings($pdo), 'member')): ?><a href="<?= e($memberApp['url']) ?>" class="btn btn-sm btn-success me-2"><i class="bi bi-android2 me-1"></i>Download Android App</a><?php endif; ?>
             <form method="post" action="../logout.php" class="m-0"><?= csrf_field() ?><button type="submit" class="btn btn-sm btn-outline-light">Sign Out</button></form>
         </div>
     </div>

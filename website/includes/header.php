@@ -47,6 +47,7 @@ $subInfo      = $currentAdmin['subscription'] ?? get_gym_subscription_info($pdo,
             </div>
 
             <div class="d-flex align-items-center gap-2">
+                <?php if ($ownerApp = app_download_info($platformCfg, 'owner')): ?><a href="<?= e($ownerApp['url']) ?>" class="btn btn-sm btn-success d-none d-md-inline-flex align-items-center gap-1"><i class="bi bi-android2"></i><span>Get Android App</span></a><?php endif; ?>
                 <button type="button" class="btn btn-sm btn-light border d-none" id="pwaInstallBtn">
                     <i class="bi bi-download me-1"></i>Install App
                 </button>
@@ -65,6 +66,7 @@ $subInfo      = $currentAdmin['subscription'] ?? get_gym_subscription_info($pdo,
                             <div class="fw-semibold text-dark"><?= e($currentAdmin['full_name'] ?? 'Gym Owner') ?></div>
                             <div class="text-muted text-truncate" style="max-width: 200px;"><?= e($currentAdmin['email'] ?? '') ?></div>
                         </li>
+                        <?php if (!empty($ownerApp)): ?><li><a class="dropdown-item py-2 fw-semibold text-success" href="<?= e($ownerApp['url']) ?>"><i class="bi bi-android2 me-2"></i>Download Android App</a></li><?php endif; ?>
                         <li><a class="dropdown-item py-2" href="<?= e(app_href('owner_subscription.php')) ?>"><i class="bi bi-award me-2"></i>SaaS Subscription</a></li>
                         <li><a class="dropdown-item py-2" href="<?= e(app_href('settings.php')) ?>"><i class="bi bi-gear me-2"></i>Gym Settings</a></li>
                         <li><a class="dropdown-item py-2" href="<?= e(app_href('change_password.php')) ?>"><i class="bi bi-key me-2"></i>Change Password</a></li>

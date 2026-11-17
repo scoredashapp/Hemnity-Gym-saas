@@ -660,8 +660,21 @@ object IdCardRenderer {
         backBitmap: Bitmap?,
         jobName: String
     ) {
-        val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager ?: return
+        var host: Context = context
+        while (host is android.content.ContextWrapper && host !is android.app.Activity) {
+            host = host.baseContext
+        }
+        val printManager = host.getSystemService(Context.PRINT_SERVICE) as? PrintManager ?: return
         val pagesCount = if (backBitmap != null) 2 else 1
+        // Snapshot bitmaps so the print job survives screen recomposition / recycling.
+        val front = frontBitmap.copy(Bitmap.Config.ARGB_8888, false)
+        val back = backBitmap?.copy(Bitmap.Config.ARGB_8888, false)
+        var currentAttrs: PrintAttributes = PrintAttributes.Builder()
+            .setMediaSize(PrintAttributes.MediaSize.ISO_A5)
+            .setResolution(PrintAttributes.Resolution("pdf", "pdf", 300, 300))
+            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+            .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+            .build()
         val adapter = object : PrintDocumentAdapter() {
             override fun onLayout(
                 oldAttributes: PrintAttributes?,
@@ -674,11 +687,12 @@ object IdCardRenderer {
                     callback?.onLayoutCancelled()
                     return
                 }
+                if (newAttributes != null) currentAttrs = newAttributes
                 val info = PrintDocumentInfo.Builder("$jobName.pdf")
                     .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                     .setPageCount(pagesCount)
                     .build()
-                callback?.onLayoutFinished(info, true)
+                callback?.onLayoutFinished(info, oldAttributes != newAttributes)
             }
 
             override fun onWrite(
@@ -687,29 +701,37 @@ object IdCardRenderer {
                 cancellationSignal: CancellationSignal?,
                 callback: WriteResultCallback?
             ) {
-                val pdf = PrintedPdfDocument(
-                    context,
-                    PrintAttributes.Builder()
-                        .setMediaSize(PrintAttributes.MediaSize.ISO_A5)
-                        .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
-                        .build()
-                )
-                drawPrintedPage(pdf, 0, frontBitmap)
-                if (backBitmap != null) {
-                    drawPrintedPage(pdf, 1, backBitmap)
-                }
-                runCatching {
-                    destination?.fileDescriptor?.let { fd ->
+                Thread {
+                    var pdf: PrintedPdfDocument? = null
+                    try {
+                        if (cancellationSignal?.isCanceled == true) {
+                            callback?.onWriteCancelled()
+                            return@Thread
+                        }
+                        pdf = PrintedPdfDocument(host, currentAttrs)
+                        drawPrintedPage(pdf, 0, front)
+                        if (back != null) drawPrintedPage(pdf, 1, back)
+                        val fd = destination?.fileDescriptor
+                            ?: throw IllegalStateException("No print destination")
                         FileOutputStream(fd).use { pdf.writeTo(it) }
+                        callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+                    } catch (err: Throwable) {
+                        callback?.onWriteFailed(err.message ?: "Print failed")
+                    } finally {
+                        runCatching { pdf?.close() }
+                        runCatching { destination?.close() }
                     }
-                    callback?.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
-                }.onFailure { err ->
-                    callback?.onWriteFailed(err.message)
-                }
-                pdf.close()
+                }.start()
             }
         }
-        printManager.print(jobName, adapter, null)
+        printManager.print(
+            jobName,
+            adapter,
+            PrintAttributes.Builder()
+                .setMediaSize(PrintAttributes.MediaSize.ISO_A5)
+                .setColorMode(PrintAttributes.COLOR_MODE_COLOR)
+                .build()
+        )
     }
 
     private fun drawPrintedPage(pdf: PrintedPdfDocument, pageIndex: Int, cardBitmap: Bitmap) {

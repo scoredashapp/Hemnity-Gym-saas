@@ -296,7 +296,8 @@ fun OwnerPaymentsScreen(
     }
 
     if (showAddPaymentSheet) {
-        var memberId by remember { mutableStateOf("") }
+        var pickedMember by remember { mutableStateOf<com.example.domain.model.MemberRecord?>(null) }
+        val allMembers = (uiState.members as? SectionState.Success)?.data.orEmpty()
         var amount by remember { mutableStateOf("") }
         var method by remember { mutableStateOf("CASH") }
         var planId by remember { mutableStateOf("") }
@@ -316,7 +317,7 @@ fun OwnerPaymentsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(value = memberId, onValueChange = { memberId = it }, label = { Text("Member ID or Code *") }, modifier = Modifier.fillMaxWidth())
+                MemberSearchPicker(members = allMembers, selected = pickedMember, onSelect = { pickedMember = it })
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = amount,
@@ -344,7 +345,7 @@ fun OwnerPaymentsScreen(
                     onClick = {
                         onRecordManualPayment(
                             ManualPaymentRequest(
-                                memberIdOrCode = memberId,
+                                memberIdOrCode = pickedMember?.id ?: "",
                                 amount = amount,
                                 method = method,
                                 planId = planId.ifBlank { null },
@@ -353,7 +354,7 @@ fun OwnerPaymentsScreen(
                         )
                         showAddPaymentSheet = false
                     },
-                    enabled = !uiState.isRecordingPayment && memberId.isNotBlank() && amount.isNotBlank(),
+                    enabled = !uiState.isRecordingPayment && pickedMember != null && amount.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().height(50.dp)
                 ) {
                     Text(if (uiState.isRecordingPayment) "Saving..." else "Record Payment")

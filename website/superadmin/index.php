@@ -8,7 +8,7 @@ $superAdmin  = require_super_admin();
 $pdo         = db();
 $platformCfg = get_platform_settings($pdo);
 
-$allowedTabs = ['overview', 'gyms', 'plans', 'subscriptions', 'branding', 'cms', 'tickets', 'audit'];
+$allowedTabs = ['overview', 'gyms', 'plans', 'subscriptions', 'branding', 'apps', 'cms', 'tickets', 'audit'];
 $tab = clean_str($_GET['tab'] ?? 'overview', 30);
 if (!in_array($tab, $allowedTabs, true)) {
     $tab = 'overview';
@@ -216,6 +216,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('index.php?tab=subscriptions');
     }
 
+    if ($action === 'save_apps') {
+        $cfgNow = $pdo->query('SELECT owner_apk_path, member_apk_path FROM platform_settings WHERE id = 1')->fetch() ?: [];
+        foreach (['owner', 'member'] as $app) {
+            $col = $app . '_apk_path';
+            $old = (string)($cfgNow[$col] ?? '');
+            $url = clean_str((string)($_POST[$app . '_apk_url'] ?? ''), 500);
+            if ($url !== '' && !preg_match('#^https?://#i', $url)) {
+                set_flash('danger', ucfirst($app) . ' app link must start with http:// or https://');
+                redirect('index.php?tab=apps');
+            }
+            $ver = clean_str((string)($_POST[$app . '_apk_version'] ?? ''), 30);
+            $pdo->prepare("UPDATE platform_settings SET {$app}_apk_url = :u, {$app}_apk_version = :v WHERE id = 1")->execute([':u' => $url ?: null, ':v' => $ver ?: null]);
+            if (!empty($_POST['remove_' . $app])) {
+                if ($old !== '' && str_starts_with($old, 'uploads/apps/')) { @unlink(dirname(__DIR__) . '/' . $old); }
+                $pdo->prepare("UPDATE platform_settings SET {$col} = NULL WHERE id = 1")->execute();
+            }
+            $f = $_FILES[$app . '_apk'] ?? null;
+            if ($f && (int)($f['error'] ?? 4) !== UPLOAD_ERR_NO_FILE) {
+                if ((int)$f['error'] !== UPLOAD_ERR_OK) {
+                    set_flash('danger', ucfirst($app) . ' APK upload failed (error ' . (int)$f['error'] . '). The file may exceed the server upload limit — use the link field instead.');
+                    redirect('index.php?tab=apps');
+                }
+                if (strtolower(pathinfo((string)$f['name'], PATHINFO_EXTENSION)) !== 'apk') {
+                    set_flash('danger', ucfirst($app) . ': only .apk files are allowed.');
+                    redirect('index.php?tab=apps');
+                }
+                $head = (string)file_get_contents((string)$f['tmp_name'], false, null, 0, 4);
+                if ($head !== "PK\x03\x04") {
+                    set_flash('danger', ucfirst($app) . ': file is not a valid APK.');
+                    redirect('index.php?tab=apps');
+                }
+                $dir = dirname(__DIR__) . '/uploads/apps';
+                if (!is_dir($dir)) { @mkdir($dir, 0755, true); }
+                $name = 'uploads/apps/hemnity-' . $app . '-' . bin2hex(random_bytes(6)) . '.apk';
+                if (!move_uploaded_file((string)$f['tmp_name'], dirname(__DIR__) . '/' . $name)) {
+                    set_flash('danger', 'Could not save the ' . $app . ' APK.');
+                    redirect('index.php?tab=apps');
+                }
+                if ($old !== '' && str_starts_with($old, 'uploads/apps/')) { @unlink(dirname(__DIR__) . '/' . $old); }
+                $pdo->prepare("UPDATE platform_settings SET {$col} = :p WHERE id = 1")->execute([':p' => $name]);
+            }
+        }
+        log_audit_event($pdo, 'super_admin', (int)$superAdmin['id'], 'superadmin.update_apps', 'platform_settings', '1', null);
+        set_flash('success', 'Mobile app downloads updated.');
+        redirect('index.php?tab=apps');
+    }
+
     if ($action === 'save_branding') {
         $cfgNow  = $pdo->query('SELECT site_logo_path, favicon_path FROM platform_settings WHERE id = 1')->fetch() ?: [];
         $updates = [];
@@ -406,6 +453,7 @@ $flashes = pull_flashes();
                 'plans'         => ['SaaS Plans', 'bi-tags'],
                 'subscriptions' => ['Subscriptions & Invoices', 'bi-receipt'],
                 'branding'      => ['Site Logo & Favicon', 'bi-image'],
+                'apps'          => ['Mobile Apps (APK)', 'bi-android2'],
                 'cms'           => ['Landing CMS & FAQs', 'bi-layout-text-window'],
                 'tickets'       => ['Support Tickets (' . $stats['open_tickets'] . ')', 'bi-life-preserver'],
                 'audit'         => ['Audit Logs', 'bi-shield-check'],
@@ -760,6 +808,30 @@ $flashes = pull_flashes();
                 </div>
             </div>
         </div>
+
+    <?php elseif ($tab === 'apps'): ?>
+        <?php $appCfg = $pdo->query('SELECT * FROM platform_settings WHERE id = 1')->fetch() ?: []; ?>
+        <div class="row g-4"><div class="col-lg-8">
+            <form method="post" action="index.php?tab=apps" enctype="multipart/form-data" class="gym-card p-4">
+                <?= csrf_field() ?><input type="hidden" name="action" value="save_apps"><input type="hidden" name="redirect_tab" value="apps">
+                <h2 class="h6 fw-bold mb-1">Android App Downloads</h2>
+                <p class="small text-muted mb-4">Gym owners and members see a <strong>Download Android App</strong> button after they log in. Upload the APK file here, or paste an external download link (a link takes priority over an uploaded file).</p>
+                <?php foreach (['owner' => 'Gym Owner App', 'member' => 'Gym Member App'] as $app => $title):
+                    $info = app_download_info($appCfg, $app); ?>
+                    <div class="border rounded-3 p-3 mb-3">
+                        <div class="fw-semibold mb-2"><i class="bi bi-android2 text-success me-1"></i><?= e($title) ?>
+                            <?php if ($info): ?><span class="badge text-bg-success ms-2">Live</span><?php else: ?><span class="badge text-bg-secondary ms-2">Not set</span><?php endif; ?></div>
+                        <div class="row g-2">
+                            <div class="col-md-8"><label class="form-label small">Upload APK file</label><input type="file" class="form-control form-control-sm" name="<?= $app ?>_apk" accept=".apk"><?php if (!empty($appCfg[$app . '_apk_path'])): ?><div class="form-text">Current file: <code><?= e(basename((string)$appCfg[$app . '_apk_path'])) ?></code> (<?= e(number_format(((int)@filesize(dirname(__DIR__) . '/' . $appCfg[$app . '_apk_path'])) / 1048576, 1)) ?> MB)</div><div class="form-check mt-1"><input class="form-check-input" type="checkbox" id="rm_<?= $app ?>" name="remove_<?= $app ?>" value="1"><label class="form-check-label small" for="rm_<?= $app ?>">Remove uploaded file</label></div><?php endif; ?></div>
+                            <div class="col-md-4"><label class="form-label small">Version label</label><input type="text" class="form-control form-control-sm" name="<?= $app ?>_apk_version" value="<?= e($appCfg[$app . '_apk_version'] ?? '') ?>" placeholder="1.0.0"></div>
+                            <div class="col-12"><label class="form-label small">…or external download link</label><input type="url" class="form-control form-control-sm" name="<?= $app ?>_apk_url" value="<?= e($appCfg[$app . '_apk_url'] ?? '') ?>" placeholder="https://github.com/…/Hemnity-Gym-<?= e(ucfirst($app)) ?>.apk"></div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <button class="btn btn-gym-primary"><i class="bi bi-cloud-upload me-1"></i>Save App Downloads</button>
+                <div class="form-text mt-2">If the upload fails for large files, ask your host to raise <code>upload_max_filesize</code>/<code>post_max_size</code>, or use the link field.</div>
+            </form>
+        </div></div>
 
     <?php elseif ($tab === 'cms'): ?>
         <div class="row g-4">

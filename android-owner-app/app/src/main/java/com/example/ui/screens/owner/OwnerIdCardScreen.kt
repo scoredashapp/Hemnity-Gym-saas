@@ -71,19 +71,17 @@ fun OwnerIdCardsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val members = (uiState.members as? SectionState.Success)?.data.orEmpty()
-    var selectedMemberId by remember(members.firstOrNull()?.id) {
-        mutableStateOf(initialSelectedMemberId ?: members.firstOrNull()?.id)
-    }
+    var selectedMemberId by remember { mutableStateOf(initialSelectedMemberId) }
 
     LaunchedEffect(initialSelectedMemberId, members) {
         if (!initialSelectedMemberId.isNullOrBlank() && members.any { it.id == initialSelectedMemberId }) {
             selectedMemberId = initialSelectedMemberId
-        } else if (selectedMemberId == null || members.none { it.id == selectedMemberId }) {
-            selectedMemberId = members.firstOrNull()?.id
+        } else if (selectedMemberId != null && members.none { it.id == selectedMemberId }) {
+            selectedMemberId = null
         }
     }
 
-    val member = members.firstOrNull { it.id == selectedMemberId } ?: members.firstOrNull()
+    val member = members.firstOrNull { it.id == selectedMemberId }
     val dash = (uiState.dashboard as? SectionState.Success)?.data
     val settingsData = (uiState.settings as? SectionState.Success)?.data
     val gymName = dash?.gymName ?: uiState.session?.gymName?.ifBlank { null } ?: "Hemnity Gym"
@@ -191,15 +189,12 @@ fun OwnerIdCardsScreen(
                         icon = Icons.Filled.QrCode2
                     )
                 } else {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(members, key = { it.id }) { m ->
-                            FilterChip(
-                                selected = m.id == member?.id,
-                                onClick = { selectedMemberId = m.id },
-                                label = { Text(m.name) }
-                            )
-                        }
-                    }
+                    MemberSearchPicker(
+                        members = members,
+                        selected = member,
+                        onSelect = { picked -> selectedMemberId = picked?.id },
+                        label = "Search member (name / ID / phone)"
+                    )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

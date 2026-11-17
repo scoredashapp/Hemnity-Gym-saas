@@ -86,11 +86,11 @@ fun DashboardScreen(
         viewModel.loadDashboard()
     }
 
-    val isRefreshing = uiState is DashboardUiState.Loading
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     PullToRefreshBox(
-        isRefreshing = false,
-        onRefresh = { viewModel.loadDashboard() },
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() },
         modifier = Modifier
             .fillMaxSize()
             .testTag("dashboard_screen"),
