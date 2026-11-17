@@ -1,0 +1,6 @@
+{
+  "name": "Hemnity Gym Member",
+  "description": "Native Android member companion app for Hemnity Gym Management Software with secure multi-gym memberships, digital QR pass, attendance calendar, payments, and notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

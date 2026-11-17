@@ -1,0 +1,17 @@
+{
+  "name": "Hemnity Gym Management Software",
+  "short_name": "Hemnity Gym",
+  "description": "Multi-tenant gym management platform with QR check-in, ID cards, member portal, and billing.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0e12",
+  "theme_color": "#ea580c",
+  "icons": [
+    {
+      "src": "assets/css/style.css",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

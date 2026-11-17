@@ -1,0 +1,6 @@
+{
+  "name": "GYM — Gym Member Management System",
+  "description": "Complete gym administration system with member CRUD, membership plans, payments & printable receipts, attendance tracking, WhatsApp expiry reminders, CSV reports, and cPanel PHP + MySQL deployment package.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

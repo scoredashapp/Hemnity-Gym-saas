@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hemnity Gym Member</string>
+    <string name="brand_tagline">Member Pass &amp; Fitness Portal</string>
+    <string name="login_title">Member Sign In</string>
+    <string name="login_subtitle">Access your gym memberships, digital QR pass, attendance log, and receipts.</string>
+    <string name="login_identifier_label">Registered Email or Mobile Number</string>
+    <string name="login_password_label">Password</string>
+    <string name="login_button">Sign In to Gym Pass</string>
+    <string name="login_forgot_password">Forgot Password?</string>
+    <string name="login_members_only_badge">Gym Members Only</string>
+    <string name="error_privileged_role_rejected">This app is exclusively for Gym Members. Gym Owner and Super Admin accounts cannot access the Member app.</string>
+    <string name="error_network_unavailable">Unable to reach Hemnity servers. Check your internet connection and try again.</string>
+    <string name="error_endpoint_not_deployed">This member API endpoint is not yet enabled on the backend server. Please deploy the PHP member API extension or contact support.</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_membership">Membership</string>
+    <string name="nav_attendance">Attendance</string>
+    <string name="nav_id_card">ID Card</string>
+    <string name="nav_profile">Profile</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_logout">Log Out</string>
+    <string name="privacy_policy_title">Privacy Policy</string>
+    <string name="terms_title">Terms &amp; Conditions</string>
+    <string name="help_support_title">Help &amp; Support</string>
+</resources>

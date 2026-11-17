@@ -1,0 +1,6 @@
+{
+  "name": "Hemnity Gym Owner",
+  "description": "Dedicated native Android console for Gym Owners on Hemnity Gym SaaS: dashboard analytics, member management, CameraX + ML Kit QR check-in, ID cards, plans, payments, reports, and settings.",
+  "requestFramePermissions": ["CAMERA"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

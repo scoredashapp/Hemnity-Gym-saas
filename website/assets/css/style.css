@@ -1,0 +1,436 @@
+/* ==========================================================================
+   GYM — Gym Member Management System
+   Custom Stylesheet (Bootstrap 5 + Plus Jakarta Sans & JetBrains Mono)
+   Palette: Dark Obsidian Sidebar (#0C0E12), Clean Light Canvas (#F8F9FB),
+            Athletic Orange Accent (#EA580C / #F97316), Crisp Hairlines (#E5E7EB)
+   ========================================================================== */
+
+:root {
+    --gym-bg: #f8f9fb;
+    --gym-surface: #ffffff;
+    --gym-border: #e5e7eb;
+    --gym-sidebar-bg: #0c0e12;
+    --gym-sidebar-hover: #181c24;
+    --gym-text: #111827;
+    --gym-muted: #6b7280;
+    --gym-orange: #ea580c;
+    --gym-orange-hover: #c2410c;
+    --gym-orange-soft: #fff7ed;
+    --gym-red: #dc2626;
+    --gym-red-soft: #fef2f2;
+    --gym-amber: #d97706;
+    --gym-amber-soft: #fffbeb;
+    --gym-green: #16a34a;
+    --gym-green-soft: #f0fdf4;
+    --gym-sidebar-width: 260px;
+}
+
+body.gym-body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--gym-bg);
+    color: var(--gym-text);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.font-mono,
+.tabular-nums {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Layout Shell */
+.gym-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.gym-sidebar {
+    width: var(--gym-sidebar-width);
+    background-color: var(--gym-sidebar-bg);
+    color: #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1040;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gym-sidebar-brand {
+    height: 64px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gym-brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background-color: var(--gym-orange);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.gym-brand-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.gym-brand-text {
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.01em;
+}
+
+.gym-sidebar-nav {
+    flex: 1;
+    padding: 16px 12px;
+    overflow-y: auto;
+}
+
+.gym-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+    border-radius: 8px;
+    color: #9ca3af;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.gym-nav-link i {
+    font-size: 1.05rem;
+}
+
+.gym-nav-link:hover {
+    background-color: var(--gym-sidebar-hover);
+    color: #ffffff;
+}
+
+.gym-nav-link.active {
+    background-color: var(--gym-orange);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.gym-sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gym-main-wrap {
+    flex: 1;
+    margin-left: var(--gym-sidebar-width);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.gym-topbar {
+    height: 64px;
+    background-color: var(--gym-surface);
+    border-bottom: 1px solid var(--gym-border);
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.gym-content {
+    flex: 1;
+    padding: 28px;
+}
+
+.gym-footer {
+    padding: 16px 28px;
+    background-color: var(--gym-surface);
+    border-top: 1px solid var(--gym-border);
+}
+
+/* Surface Cards (Single-Elevation Flat Hairline Architecture) */
+.gym-card {
+    background-color: var(--gym-surface);
+    border: 1px solid var(--gym-border);
+    border-radius: 12px;
+}
+
+.gym-card-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--gym-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.gym-card-body {
+    padding: 22px;
+}
+
+/* KPI Stat Grid */
+.gym-stat-card {
+    background-color: var(--gym-surface);
+    border: 1px solid var(--gym-border);
+    border-radius: 12px;
+    padding: 20px;
+    height: 100%;
+}
+
+.gym-stat-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--gym-muted);
+    margin-bottom: 8px;
+}
+
+.gym-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--gym-text);
+    line-height: 1.2;
+}
+
+/* Primary Buttons */
+.btn-gym-primary {
+    background-color: var(--gym-orange);
+    border-color: var(--gym-orange);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-gym-primary:hover,
+.btn-gym-primary:focus {
+    background-color: var(--gym-orange-hover);
+    border-color: var(--gym-orange-hover);
+    color: #ffffff;
+}
+
+.btn-gym-dark {
+    background-color: #111827;
+    border-color: #111827;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.btn-gym-dark:hover,
+.btn-gym-dark:focus {
+    background-color: #1f2937;
+    border-color: #1f2937;
+    color: #ffffff;
+}
+
+/* Tables & Expiry Row Highlights */
+.gym-table {
+    margin-bottom: 0;
+}
+
+.gym-table thead th {
+    background-color: #f9fafb;
+    color: #4b5563;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid var(--gym-border);
+    padding: 12px 16px;
+    white-space: nowrap;
+}
+
+.gym-table tbody td {
+    padding: 13px 16px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.gym-row-expired {
+    background-color: var(--gym-red-soft) !important;
+}
+
+.gym-row-expiring {
+    background-color: var(--gym-amber-soft) !important;
+}
+
+/* Semantic Status Indicators (Accessible Text + Icon) */
+.status-text-active {
+    color: var(--gym-green);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.status-text-expiring {
+    color: var(--gym-amber);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.status-text-expired {
+    color: var(--gym-red);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+.status-text-inactive {
+    color: var(--gym-muted);
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+
+/* Member Avatar */
+.gym-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #f3f4f6;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    border: 1px solid var(--gym-border);
+}
+
+.gym-avatar-lg {
+    width: 84px;
+    height: 84px;
+    font-size: 1.5rem;
+}
+
+/* Auth Pages */
+.gym-auth-page {
+    min-height: 100vh;
+    background-color: #0c0e12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.gym-auth-card {
+    width: 100%;
+    max-width: 440px;
+    background-color: #ffffff;
+    border-radius: 14px;
+    padding: 36px 32px;
+    border: 1px solid #e5e7eb;
+}
+
+/* Receipt Print Container */
+.gym-receipt-box {
+    max-width: 760px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1px solid var(--gym-border);
+    border-radius: 12px;
+    padding: 40px;
+}
+
+/* Responsive Mobile Drawer */
+.gym-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(12, 14, 18, 0.55);
+    z-index: 1035;
+}
+
+@media (max-width: 991.98px) {
+    .gym-sidebar {
+        transform: translateX(-100%);
+    }
+    .gym-sidebar.show {
+        transform: translateX(0);
+    }
+    .gym-sidebar-backdrop.show {
+        display: block;
+    }
+    .gym-main-wrap {
+        margin-left: 0;
+    }
+    .gym-topbar,
+    .gym-content,
+    .gym-footer {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* Print Rules */
+@media print {
+    body.gym-body {
+        background: #ffffff !important;
+    }
+    .no-print,
+    .gym-sidebar,
+    .gym-topbar,
+    .gym-footer {
+        display: none !important;
+    }
+    .gym-main-wrap {
+        margin-left: 0 !important;
+    }
+    .gym-content {
+        padding: 0 !important;
+    }
+    .gym-receipt-box {
+        border: none !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+    }
+    .pvc-id-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        border: 1px solid #d1d5db !important;
+    }
+}
+
+/* Printable PVC ID Card (CR80 Aspect Ratio) */
+.pvc-id-card {
+    background: #ffffff;
+    border: 1px solid var(--gym-border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.pvc-id-header {
+    background: #0c0e12;
+    color: #ffffff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pvc-id-body {
+    padding: 16px;
+}
+
+.saas-hero {
+    background: #0c0e12;
+    color: #ffffff;
+}
+

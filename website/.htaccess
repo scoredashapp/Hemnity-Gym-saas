@@ -1,0 +1,67 @@
+# ============================================================================
+# Hemnity Gym Management Software — Apache / LiteSpeed Rules (cPanel Compatible)
+# ============================================================================
+
+# Disable directory browsing across all folders
+Options -Indexes
+
+# Set default directory index
+DirectoryIndex index.php
+
+# Protect sensitive configuration, SQL schema, docs, and env files from HTTP access
+<FilesMatch "^(config\.php|config\.local\.php|database\.sql|database_saas\.sql|database_migration\.sql|README\.md|\.env.*|composer\.(json|lock)|package(-lock)?\.json)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct HTTP access to PHP partial templates in /includes/
+    RewriteRule ^includes/.*\.php$ - [F,L]
+
+    # Route clean REST API paths to /api/v1/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/v1/(.*)$ api/v1/index.php?route=$1 [QSA,L]
+
+    # ---- Clean URLs: hide the .php extension --------------------------------
+    # 1) browser asked for /page.php (GET/HEAD) -> 301 to /page  (/dir/index.php -> /dir/)
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/[^\s?]*\.php[\s?]
+    RewriteRule ^(.*/)?index\.php$ /$1 [R=301,L,NE]
+    RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+    RewriteCond %{THE_REQUEST} \s/[^\s?]*\.php[\s?]
+    RewriteRule ^(.*)\.php$ /$1 [R=301,L,NE]
+
+    # 2) /page -> /page.php when that file exists
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L]
+
+    RewriteRule ^favicon\.ico$ site_icon.php [L]
+
+    # Route clean portal paths for SaaS convenience
+    RewriteRule ^owner/?$ index.php [L]
+    RewriteRule ^owner/login/?$ login.php [L]
+    RewriteRule ^owner/register/?$ owner_register.php [L]
+    RewriteRule ^member/?$ member/index.php [L]
+    RewriteRule ^superadmin/?$ superadmin/index.php [L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# UTF-8 default charset
+AddDefaultCharset UTF-8

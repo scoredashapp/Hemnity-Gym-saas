@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Hemnity Gym Owner</string>
+    <string name="brand_tagline">Gym Owner Management Console</string>
+    <string name="cd_hemnity_logo">Hemnity Gym logo</string>
+    <string name="cd_toggle_password">Toggle password visibility</string>
+    <string name="cd_back">Navigate back</string>
+    <string name="cd_refresh">Refresh data</string>
+    <string name="cd_qr_code">Member QR attendance credential</string>
+    <string name="cd_member_photo">Member profile photo</string>
+    <string name="cd_gym_logo">Gym brand logo</string>
+    <string name="cd_torch">Toggle camera flashlight</string>
+    <string name="error_network_offline">Unable to reach gym.hemnity.in. Check your internet connection and retry.</string>
+    <string name="error_session_expired">Your session expired or was revoked. Please sign in again.</string>
+    <string name="error_backend_extension_required">This feature requires a backend API extension on gym.hemnity.in.</string>
+</resources>
